@@ -5,13 +5,20 @@ from typing import List, Dict
 # pyrefly: ignore [missing-import]
 from transformers import pipeline
 import asyncio
+import sys
+import os
+
+# Ensure backend and data_science modules are in path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from backend.retrieval_pipeline import MultiStageRetrieval
 
 app = FastAPI(title="VaaniMatch Ranking API", version="1.0.0")
 
 # --- Global Components (Loaded on startup in production) ---
-print("Loading Zero-Shot Classifier...")
+print("Loading Zero-Shot Classifier and Retrieval Pipeline...")
 # We use a smaller model for demonstration/speed
 classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+retrieval_pipeline = MultiStageRetrieval()
 
 # Define dynamic weight sets
 # Weights: [α=Semantic, β=Trajectory, γ=Behavior, δ=Graph, ε=Verification]
@@ -69,8 +76,27 @@ async def rank_candidates(request: RankRequest):
     jd_class = classification_result['labels'][0]
     weights = WEIGHT_MAP.get(jd_class, WEIGHT_MAP["Technical"]) # Default fallback
 
-    # 2. Fetch Raw Candidates (Mocked)
+    # 1.5 Real Retrieval via MultiStage Pipeline
+    # Mocking query embedding and karmgraph candidates for orchestration
+    import numpy as np
+    mock_query_emb = np.random.random(256).astype('float32')
+    mock_karmgraph = [1, 2, 3]
+    
+    retrieved_top_k = await asyncio.to_thread(
+        retrieval_pipeline.retrieve_and_rerank,
+        request.jd_text, mock_query_emb, mock_karmgraph, 100, 10
+    )
+    
+    # 2. Fetch Raw Candidates (Mocked database call using retrieved IDs)
     candidates = await fetch_mock_candidate_scores()
+    
+    # If the retrieval pipeline returned valid candidates, we can map them
+    if retrieved_top_k:
+        # Override mock IDs with actual retrieved IDs
+        for i, (cid, score) in enumerate(retrieved_top_k):
+            if i < len(candidates):
+                candidates[i].candidate_id = str(cid)
+                candidates[i].semantic_score = float(score) # Use cross-encoder score
 
     # 3. Dynamic Scoring & Normalization
     ranked_list = []

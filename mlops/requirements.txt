@@ -1,0 +1,10 @@
+jupyter
+pandas
+numpy
+matplotlib
+seaborn
+locust
+faiss-cpu
+psycopg2-binary
+redis
+schedule
