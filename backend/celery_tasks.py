@@ -3,7 +3,14 @@ import redis
 from celery import Celery
 from celery.schedules import crontab
 import json
+import sys
+import os
 
+# Ensure data_science module is in path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from data_science.bharatbert_finetune import BharatBERT
+from transformers import AutoTokenizer
+import torch
 # --- Redis Configuration ---
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
@@ -54,23 +61,35 @@ def pull_and_embed_candidates():
     
     print(f"Pulled {len(mock_new_candidates)} new candidates from DB.")
     
-    # 2. Generate Embeddings
-    # Assuming BharatBERT model is loaded globally or passed in
-    print("Generating embeddings using BharatBERT...")
-    # mock_embeddings = model.encode([c['text'] for c in mock_new_candidates])
-    
-    # 3. Push to Redis with 24h TTL
-    TTL_SECONDS = 24 * 60 * 60
-    
-    for c in mock_new_candidates:
-        redis_key = f"candidate_embedding:{c['id']}"
-        # Mock embedding data as JSON list
-        embedding_data = json.dumps([0.1, 0.2, 0.3]) 
+    # 2. Generate Embeddings using actual BharatBERT
+    print("Loading tokenizer and generating embeddings using BharatBERT...")
+    try:
+        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-multilingual-cased")
+        model = BharatBERT()
+        model.eval()
         
-        # Set with expiry
-        redis_client.setex(redis_key, TTL_SECONDS, embedding_data)
+        # We process in a simple loop for this orchestration mock
+        TTL_SECONDS = 24 * 60 * 60
         
-    print("[Task] Completed. Embeddings pushed to Redis.")
+        with torch.no_grad():
+            for c in mock_new_candidates:
+                inputs = tokenizer(c['text'], return_tensors='pt', padding='max_length', truncation=True, max_length=128)
+                embeddings = model(inputs['input_ids'], inputs['attention_mask'])
+                
+                # Convert 256-dim tensor to list
+                emb_list = embeddings.squeeze(0).tolist()
+                
+                # 3. Push to Redis with 24h TTL
+                redis_key = f"candidate_embedding:{c['id']}"
+                embedding_data = json.dumps(emb_list) 
+                
+                # Set with expiry
+                redis_client.setex(redis_key, TTL_SECONDS, embedding_data)
+                
+        print("[Task] Completed. Real embeddings generated and pushed to Redis.")
+    except Exception as e:
+        print(f"Error generating embeddings: {e}")
+        
     return f"Processed {len(mock_new_candidates)} candidates."
 
 @app.task

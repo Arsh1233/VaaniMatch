@@ -2,6 +2,13 @@ import numpy as np
 import faiss
 import time
 from sentence_transformers import CrossEncoder
+import torch
+import sys
+import os
+
+# Ensure data_science module is in path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from data_science.karmgraph_pipeline import KarmGraphSAGE_GAT
 
 class MultiStageRetrieval:
     def __init__(self, embedding_dim=256, nlist=100, m=8, bits_per_subquantizer=8):
@@ -106,8 +113,22 @@ if __name__ == "__main__":
     query_text = "Looking for a Senior Python Developer with machine learning experience."
     query_emb = np.random.random(256).astype('float32')
     
-    # Mock KarmGraph candidates (e.g., IDs 5, 100005)
-    mock_karmgraph_cids = [5, 12, 45, 9999]
+    # Actually try to load KarmGraph embeddings if they exist
+    karmgraph_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data_science', 'karmgraph_embeddings.pt')
+    mock_karmgraph_cids = []
+    try:
+        if os.path.exists(karmgraph_file):
+            print("Loading true KarmGraph embeddings...")
+            data = torch.load(karmgraph_file)
+            embeddings = data['embeddings']
+            node_to_id = data['node_to_id']
+            # For orchestration demo, just pick some top IDs
+            mock_karmgraph_cids = list(node_to_id.values())[:5]
+        else:
+            mock_karmgraph_cids = [5, 12, 45, 9999]
+    except Exception as e:
+        print(f"Failed to load KarmGraph: {e}")
+        mock_karmgraph_cids = [5, 12, 45, 9999]
     
     results = pipeline.retrieve_and_rerank(
         query_text=query_text,

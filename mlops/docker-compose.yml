@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database with pgvector extension
+  postgres:
+    image: ankane/pgvector:v0.4.1 # Specific image optimized for pgvector
+    container_name: vaanimatch_postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: vaanimatch_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d vaanimatch_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Redis Cache & Celery Broker
+  redis:
+    image: redis:7-alpine
+    container_name: vaanimatch_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # 3. FastAPI Application
+  fastapi-app:
+    build: 
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: vaanimatch_api
+    command: uvicorn api:app --host 0.0.0.0 --port 8000 --workers 4
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/vaanimatch_db
+      - REDIS_URL=redis://redis:6379/0
+      # Environment variable to trigger index preload during startup
+      - PRELOAD_FAISS_INDEX=true
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # Ensures the FAISS index is loaded into memory before the API accepts traffic.
+      # Assumes a /health or /ready endpoint in FastAPI that checks index status.
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 6 # Allows ~30s for the index to load and API to be ready
+
+  # 4. Celery Worker
+  celery-worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: vaanimatch_celery
+    command: celery -A celery_tasks worker --loglevel=info --concurrency=2
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/vaanimatch_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  # 5. Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: vaanimatch_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      fastapi-app:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
