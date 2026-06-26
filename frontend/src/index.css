@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+/* ============================================
+   VaaniMatch — Bright & Exclusive Design System
+   Prompt 3.1: Global Theme & Glass-morphism
+   ============================================ */
+
+/* --- Custom Theme Tokens --- */
+@theme {
+  --color-violet-electric: #8B5CF6;
+  --color-pink-coral: #FB7185;
+  --color-cyan-bright: #22D3EE;
+  --color-surface-dark: #0A0A12;
+  --color-surface-glass: rgba(255, 255, 255, 0.05);
+  --color-border-glass: rgba(255, 255, 255, 0.20);
+  --color-gold-shimmer: #F59E0B;
+}
+
+/* --- Animated Luminous Gradient Mesh Background --- */
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: var(--color-surface-dark);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(251, 113, 133, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(34, 211, 238, 0.10) 0%, transparent 50%);
+  background-size: 200% 200%;
+  animation: luminousMesh 15s ease infinite;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #E2E8F0;
+  overflow-x: hidden;
+}
+
+@keyframes luminousMesh {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 100% 0%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+}
+
+/* --- Google Fonts loaded from index.html --- */
+
+/* --- Glass-morphism Utility --- */
+.glass {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.glass-strong {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Neon Glow Focus Ring --- */
+.neon-focus:focus,
+.neon-focus:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+/* --- Gradient Text --- */
+.gradient-text {
+  background: linear-gradient(135deg, #8B5CF6, #FB7185, #22D3EE);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* --- Neon Gradient Button --- */
+.btn-neon {
+  background: linear-gradient(135deg, #8B5CF6, #FB7185);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 28px;
+  font-family: 'Space Grotesk', monospace;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+}
+.btn-neon:hover {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.6), 0 0 60px rgba(251, 113, 133, 0.3);
+  transform: translateY(-2px);
+}
+
+/* --- Pulsating Microphone Keyframes --- */
+@keyframes micPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.6), 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 16px rgba(139, 92, 246, 0), 0 0 40px rgba(139, 92, 246, 0.5);
+  }
+}
+
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* --- Gold Shimmer for e-Shram Badge --- */
+@keyframes goldShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.badge-gold {
+  background: linear-gradient(
+    90deg,
+    #B8860B 0%,
+    #FFD700 25%,
+    #FFFACD 50%,
+    #FFD700 75%,
+    #B8860B 100%
+  );
+  background-size: 200% 100%;
+  animation: goldShimmer 3s linear infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* --- Card Hover Lift --- */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+/* --- Scrollbar Styling --- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 3px;
+}
+
+/* --- Typography Helpers --- */
+.font-headline {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+}
+.font-label {
+  font-family: 'Space Grotesk', monospace;
+  font-weight: 600;
+}
+
+#root {
+  min-height: 100vh;
+}
